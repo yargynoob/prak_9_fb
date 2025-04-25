@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
+  <title>Административная панель</title>
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #e9ecef;
+    }
+    .container {
+      width: 85%;
+      margin: auto;
+      padding: 30px;
+      border-radius: 10px;
+      background-color: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    h1 {
+      color: #343a40;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #495057;
+      margin-top: 20px;
+    }
+    table {
+      margin-top: 10px;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #ced4da;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f8f9fa;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-control {
+      border: 1px solid #ced4da;
+      border-radius: 5px;
+      padding: 10px;
+      width: 100%;
+    }
+    .btn {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="flex flex-col">
+      <h2>Категории</h2>
+      <div class="flex flex-col">
+        <table id="categoryTable">
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th>Название</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <form id="categoryForm">
+          <div class="form-group">
+            <label for="categoryId">ID изменяемой категории</label>
+            <input class="form-control" id="categoryId" type="number" placeholder="Введите ID категории если хотите изменить её">
+          </div>
+          <div class="form-group">
+            <label for="categoryName">Название категории</label>
+            <input class="form-control" id="categoryName" type="text" placeholder="Название категории">
+          </div>
+          <button class="btn" type="submit">Сохранить</button>
+        </form>
+      </div>
+
+      <h2>Продукты</h2>
+      <div class="flex flex-col">
+        <table id="productsTable">
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th>Название</th>
+              <th>Цена</th>
+              <th>Описание</th>
+              <th>ID категорий</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <form id="productForm">
+          <div class="form-group">
+            <label for="productId">ID изменяемого продукта</label>
+            <input class="form-control" id="productId" type="number" placeholder="Введите ID продукта если хотите изменить его">
+          </div>
+          <div class="form-group">
+            <label for="productName">Название продукта</label>
+            <input class="form-control" id="productName" type="text" placeholder="Название продукта">
+          </div>
+          <div class="form-group">
+            <label for="productPrice">Цена продукта</label>
+            <input class="form-control" id="productPrice" type="number" placeholder="Цена продукта">
+          </div>
+          <div class="form-group">
+            <label for="productDescription">Описание продукта</label>
+            <input class="form-control" id="productDescription" type="text" placeholder="Описание продукта">
+          </div>
+          <div class="form-group">
+            <label for="productCategoryIds">ID категорий продукта</label>
+            <input class="form-control" id="productCategoryIds" type="text" placeholder="ID категорий продукта через запятую">
+          </div>
+          <button class="btn" type="submit">Сохранить</button>
+        </form>
+      </div>
+    </div>
+    <div class="flex flex-col gap-4 mt-4" style="width: 50%">
+      <label for="messageArea" class="font-bold">Сообщение:</label>
+      <div class="flex">
+          <input id="messageArea" type="text" size="30" class="form-control flex-grow mr-2" placeholder="Введите ваше сообщение">
+          <input type="submit" value="Отправить" onclick="sendMessage()" class="btn">
+      </div>
+      <div id="textArea" class="border p-2 rounded" style="max-height: 300px; overflow-y: auto;"></div>
+  </div>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <script>
+    function productDeleteClick(productId) {
+        $.ajax({
+            url: `/products/${productId}`,
+            method: 'delete',
+            success: () => {
+                location.reload();
+            },
+        });
+    }
+
+    function categoryDeleteClick(categoryId) {
+        $.ajax({
+            url: `/categories/${categoryId}`,
+            method: 'delete',
+            success: () => {
+                location.reload();
+            },
+        });
+    }
+
+    let products, categories;
+    $.ajax({
+        url: '/products',
+        method: 'get',
+        success: (data) => {
+            products = data;
+            let productsRowsHTML = '';
+            for (const product of products) {
+                productsRowsHTML += '<tr>'
+                productsRowsHTML += `<td>${product.id}</td>`;
+                productsRowsHTML += `<td>${product.name}</td>`;
+                productsRowsHTML += `<td>${product.price}</td>`;
+                productsRowsHTML += `<td>${product.description}</td>`;
+                productsRowsHTML += `<td>${product.categoryIds}</td>`;
+                productsRowsHTML += `<td>
+                    <button class="btn" type="button" onclick="productDeleteClick(${product.id})">Удалить</button>
+                  </td>`;
+                productsRowsHTML += '</tr>';
+            }
+            $('#productsTable tbody').html(productsRowsHTML);
+        }
+    });
+    $.ajax({
+        url: '/categories',
+        method: 'get',
+        success: (data) => {
+            categories = data;
+            let categoriesRowsHTML = '';
+            for (const category of categories) {
+                categoriesRowsHTML += '<tr>'
+                categoriesRowsHTML += `<td>${category.id}</td>`;
+                categoriesRowsHTML += `<td>${category.name}</td>`;
+                categoriesRowsHTML += `<td>
+                    <button class="btn" type="button" onclick="categoryDeleteClick(${category.id})">Удалить</button>
+                  </td>`;
+                categoriesRowsHTML += '</tr>';
+            }
+            $('#categoryTable tbody').html(categoriesRowsHTML);
+        }
+    });
+
+    $('#categoryForm').on('submit', (e) => {
+        e.preventDefault();
+        let categoryId, categoryName;
+        categoryId = $('#categoryId').val();
+        categoryName = $('#categoryName').val();
+
+        if (categoryId) {
+            $.ajax({
+                url: `/categories/${categoryId}`,
+                method: 'put',
+                data: JSON.stringify({
+                    name: categoryName,
+                }),
+                contentType: 'application/json',
+                success: () => {
+                    location.reload();
+                }
+            });
+            return;
+        }
+
+        $.ajax({
+            url: '/categories',
+            method: 'post',
+            data: JSON.stringify({
+                name: categoryName,
+            }),
+            contentType: 'application/json',
+            success: () => {
+                location.reload();
+            }
+        });
+    });
+
+    $('#productForm').on('submit', (e) => {
+        e.preventDefault();
+        let productId, productName, productPrice, productDescription, productCategoryIds;
+        productId = $('#productId').val();
+        productName = $('#productName').val();
+        productPrice = $('#productPrice').val();
+        productDescription = $('#productDescription').val();
+        productCategoryIds = $('#productCategoryIds').val().split(',').map((i) => parseInt(i, 10));
+
+        if (productId) {
+            $.ajax({
+                url: `/products/${productId}`,
+                method: 'put',
+                data: JSON.stringify({
+                    name: productName,
+                    price: productPrice,
+                    description: productDescription,
+                    categoryIds: productCategoryIds,
+                }),
+                contentType: 'application/json',
+                success: () => {
+                    location.reload();
+                }
+            });
+            return;
+        }
+
+        $.ajax({
+            url: '/products',
+            method: 'post',
+            data: JSON.stringify({
+                name: productName,
+                price: productPrice,
+                description: productDescription,
+                categoryIds: productCategoryIds,
+            }),
+            contentType: 'application/json',
+            success: () => {
+                location.reload();
+            }
+        });
+    });
+
+  </script>
+<script>
+      const connection = new WebSocket("ws://localhost:8082");
+
+      connection.onopen = (event) => {
+          console.log("Connection opened");
+      };
+
+      connection.onerror = (error) => {
+          console.log(`WebSocket Error: ${error}`);
+      };
+
+      connection.onclose = (event) => {
+          console.log("Connection closed");
+      };
+
+      connection.onmessage = (event) => {
+          const eventJson = JSON.parse(event.data);
+          message = document.createElement('p');
+          message.textContent = `${eventJson.sender === 'moderator' ? 'Вы' : 'Пользователь'}: ${eventJson.content}`;
+          document.getElementById('textArea').append(message);
+          console.log("Server response:", event.data);
+      };
+
+      function sendMessage() {
+          text = document.getElementById('messageArea').value;
+          if (text === "") {
+              alert("Пожалуйста, введите непустую строку")
+          } else {
+              connection.send(JSON.stringify({sender: "moderator", content: text}));
+              document.getElementById('messageArea').value = '';
+          }
+      }
+  </script>
+</body>
+</html>

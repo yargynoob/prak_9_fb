@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  admin:
+    build: admin
+    ports:
+      - "3030:3030"
+
+  client:
+    build: client
+    ports:
+      - "8100:8100"
+      - "8082:8082"
+    depends_on:
+      - admin

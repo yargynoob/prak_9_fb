@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+  <title>Пользовательская страница</title>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f0f4f8;
+    }
+    .container {
+      width: 90%;
+      margin: auto;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .product {
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 10px 0;
+      transition: transform 0.2s;
+    }
+    .product:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h4>Показывать у товаров:</h4>
+    <div class="flex flex-col g-2">
+      <div>
+        <label for="nameCheckbox">Наименование</label>
+        <input type="checkbox" value="name" id="nameCheckbox" onchange="getProductsGraphql()" checked>
+      </div>
+      <div>
+        <label for="priceCheckbox">Цену</label>
+        <input type="checkbox" value="name" id="priceCheckbox" onchange="getProductsGraphql()" checked>
+      </div>
+      <div>
+        <label for="descriptionCheckbox">Описание</label>
+        <input type="checkbox" value="name" id="descriptionCheckbox" onchange="getProductsGraphql()" checked>
+      </div>
+    </div>
+    <div id="result"></div>
+      <div class="flex flex-col gap-4 mt-4" style="width: 50%">
+      <label for="messageArea" class="font-bold">Сообщение:</label>
+      <div class="flex">
+          <input id="messageArea" type="text" size="30" class="form-control flex-grow mr-2" placeholder="Введите ваше сообщение">
+          <input type="submit" value="Отправить" onclick="sendMessage()" class="btn">
+      </div>
+      <div id="textArea" class="border p-2 rounded" style="max-height: 300px; overflow-y: auto;"></div>
+  </div>
+  </div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+
+  <script>
+    function getProductsGraphql() {
+        $('#result').html('');
+        let productFields = [];
+        if (document.getElementById('nameCheckbox').checked) productFields.push('name');
+        if (document.getElementById('priceCheckbox').checked) productFields.push('price');
+        if (document.getElementById('descriptionCheckbox').checked) productFields.push('description');
+
+        query = `{
+          categories {
+            id, name, products {
+              id, ${productFields.join(', ')}
+            }
+          }
+        }`;
+        $.ajax({
+            url: '/graphql',
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            data: JSON.stringify({
+                query: query,
+                variables: null,
+            }),
+            success: (data) => {
+                data = data.data.categories;
+                let productsRowsHTML = '';
+                for (const category of data) {
+                    productsRowsHTML += `<h2 class="text-2xl">${category.name}</h2>`;
+                    productsRowsHTML += '<div class="flex gap-2">';
+                    for (const product of category.products) {
+                        productsRowsHTML += '<div class="flex flex-col border p-2" style="width: 30%">'
+                        if (product.name)
+                          productsRowsHTML += `<p>Название: ${product.name}</p>`;
+                        if (product.price)
+                          productsRowsHTML += `<p>Цена: ${product.price} руб.</p>`;
+                        if (product.description)
+                          productsRowsHTML += `<p>Описание: ${product.description}</p>`;
+                        productsRowsHTML += '</div>'
+                    }
+                    productsRowsHTML += '</div>'
+                }
+
+                $('#result').wrapInner(productsRowsHTML);
+            }
+        });
+    }
+
+    getProductsGraphql();
+
+</script>
+<script>
+    const connection = new WebSocket("ws://localhost:8082");
+
+    connection.onopen = (event) => {
+        console.log("Connection opened");
+    };
+
+    connection.onerror = (error) => {
+        console.log(`WebSocket Error: ${error}`);
+    };
+
+    connection.onclose = (event) => {
+        console.log("Connection closed");
+    };
+
+    connection.onmessage = (event) => {
+        console.log(event.data)
+        const eventJson = JSON.parse(event.data);
+        message = document.createElement('p');
+        message.textContent = `${eventJson.sender === 'user' ? 'Вы' : 'Админ'}: ${eventJson.content}`;
+        document.getElementById('textArea').append(message);
+        console.log("Server response:", event.data);
+    };
+
+    function sendMessage() {
+        text = document.getElementById('messageArea').value;
+        if (text === "") {
+            alert("Пожалуйста, введите непустую строку")
+        } else {
+            connection.send(JSON.stringify({sender: "user", content: text}));
+            document.getElementById('messageArea').value = '';
+        }
+    }
+</script>
+</body>
+</html>
